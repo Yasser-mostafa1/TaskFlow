@@ -11,6 +11,8 @@
 
 **Version control (2026-10-15):** git 2.53.0 · remote `origin` → `https://github.com/Yasser-mostafa1/TaskFlow` (PUBLIC, branch `main`; the repo's own initial `.gitignore` commit `b4cdbc8` is preserved as the parent — normal fast-forward push, never force) · gh CLI 2.102.0 authenticated as `Yasser-mostafa1`. First app commit = M0–M6 + dashboard + this map; `node_modules/`, `dist/`, `.env*`, logs excluded by `.gitignore` (remote Node template + local supplements).
 
+**Deployment (GitHub Pages via Actions):** Pages site → `https://yasser-mostafa1.github.io/TaskFlow/` · source = **GitHub Actions** (`build_type: workflow`; switched from legacy branch deploy on 2026-10-15) · workflow `.github/workflows/deploy.yml` (push to `main` + `workflow_dispatch`; `npm ci` → typecheck → tests → build → upload `dist/` → `deploy-pages@v4`; permissions `pages: write` + `id-token: write`) · Vite `base: '/TaskFlow/'` for production builds only (dev stays `/`) · no client-side router → no 404-redirect hack needed.
+
 ### Runtime dependencies (pinned)
 
 | Package | Version | Why |
