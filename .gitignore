@@ -147,3 +147,10 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+# --- TaskFlow supplements (2026-10-15) ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+dist-ssr
+*.local

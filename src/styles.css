@@ -1,0 +1,164 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---- Design tokens: one source of truth, swapped by the .dark class ---- */
+:root {
+  --c-app: #f6f7f9;
+  --c-surface: #ffffff;
+  --c-surface-2: #f1f3f6;
+  --c-line: #e4e7ec;
+  --c-ink: #14171c;
+  --c-muted: #667085;
+  --c-faint: #98a2b3;
+  --c-accent: #4f46e5;
+  --c-accent-soft: #eef0ff;
+  --c-on-accent: #ffffff;
+  --c-success: #16a34a;
+  --c-success-soft: #e8f7ee;
+  --c-warn: #d97706;
+  --c-warn-soft: #fdf3e7;
+  --c-danger: #dc2626;
+  --c-danger-soft: #fdecec;
+  --c-info: #2563eb;
+  --c-info-soft: #eaf1fe;
+}
+
+.dark {
+  --c-app: #0b0d11;
+  --c-surface: #12151a;
+  --c-surface-2: #1a1e25;
+  --c-line: #262b33;
+  --c-ink: #e7eaf0;
+  --c-muted: #98a2b3;
+  --c-faint: #667085;
+  --c-accent: #818cf8;
+  --c-accent-soft: #1e2140;
+  --c-on-accent: #10121a;
+  --c-success: #4ade80;
+  --c-success-soft: #10241a;
+  --c-warn: #fbbf24;
+  --c-warn-soft: #2a1f0d;
+  --c-danger: #f87171;
+  --c-danger-soft: #2b1414;
+  --c-info: #60a5fa;
+  --c-info-soft: #101c33;
+}
+
+@theme inline {
+  --color-app: var(--c-app);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-line: var(--c-line);
+  --color-ink: var(--c-ink);
+  --color-muted: var(--c-muted);
+  --color-faint: var(--c-faint);
+  --color-accent: var(--c-accent);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-on-accent: var(--c-on-accent);
+  --color-success: var(--c-success);
+  --color-success-soft: var(--c-success-soft);
+  --color-warn: var(--c-warn);
+  --color-warn-soft: var(--c-warn-soft);
+  --color-danger: var(--c-danger);
+  --color-danger-soft: var(--c-danger-soft);
+  --color-info: var(--c-info);
+  --color-info-soft: var(--c-info-soft);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--c-app);
+  color: var(--c-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--c-accent-soft);
+}
+
+/* Subtle, non-distracting scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--c-line);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+@layer components {
+  .tf-card {
+    @apply rounded-xl border border-line bg-surface shadow-[0_1px_2px_rgba(16,24,40,0.04)];
+  }
+
+  .tf-btn {
+    @apply inline-flex h-9 select-none items-center justify-center gap-2 rounded-lg border px-3.5 text-sm font-medium whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50;
+  }
+  .tf-btn-sm {
+    @apply h-8 px-2.5 text-[13px];
+  }
+  .tf-btn-lg {
+    @apply h-10 px-5;
+  }
+  .tf-btn-primary {
+    @apply border-transparent bg-accent text-on-accent hover:opacity-90;
+  }
+  .tf-btn-secondary {
+    @apply border-line bg-surface text-ink hover:bg-surface-2;
+  }
+  .tf-btn-ghost {
+    @apply border-transparent bg-transparent text-muted hover:bg-surface-2 hover:text-ink;
+  }
+  .tf-btn-danger {
+    @apply border-transparent bg-danger text-white hover:opacity-90 dark:text-[#1a0b0b];
+  }
+
+  .tf-input {
+    @apply h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink transition-colors placeholder:text-faint focus:border-accent focus:outline-none;
+  }
+  .tf-textarea {
+    @apply w-full min-h-24 resize-y rounded-lg border border-line bg-surface px-3 py-2 text-sm leading-relaxed text-ink transition-colors placeholder:text-faint focus:border-accent focus:outline-none;
+  }
+
+  .tf-badge {
+    @apply inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium;
+  }
+
+  .tf-label {
+    @apply mb-1.5 block text-[13px] font-medium text-muted;
+  }
+}
+
+/* Respect the OS reduced-motion preference everywhere (spec §4 / §18 a11y) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
