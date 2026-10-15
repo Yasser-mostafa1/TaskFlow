@@ -23,5 +23,5 @@ export const EMPTY_STATE: AppState = {
   tags: [],
   sessions: [],
   attachments: [],
-  timer: { taskId: null, startedAt: null, accumulatedMs: 0 },
+  timer: { taskId: null, startedAt: null, accumulatedMs: 0, targetMs: null },
 }

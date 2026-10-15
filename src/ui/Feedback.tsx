@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -101,8 +102,15 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     setPendingConfirm(null)
   }
 
+  /**
+   * Referentially stable API: consumers (like App's hydration effect) may key
+   * effects on it — an inline `{ push }` object would re-run them on every
+   * toast and re-race the persistence layer.
+   */
+  const toastApi = useMemo(() => ({ push }), [push])
+
   return (
-    <ToastContext.Provider value={{ push }}>
+    <ToastContext.Provider value={toastApi}>
       <ConfirmContext.Provider value={confirm}>
         {children}
 

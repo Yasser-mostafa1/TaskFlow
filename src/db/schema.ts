@@ -17,7 +17,7 @@ export interface TaskflowDB extends DBSchema {
   meta: { key: string; value: { key: string; value: unknown } }
 }
 
-export const EMPTY_TIMER: TimerState = { taskId: null, startedAt: null, accumulatedMs: 0 }
+export const EMPTY_TIMER: TimerState = { taskId: null, startedAt: null, accumulatedMs: 0, targetMs: null }
 
 let dbPromise: Promise<IDBPDatabase<TaskflowDB> | null> | null = null
 
@@ -89,13 +89,15 @@ export async function loadState(): Promise<LoadedState> {
     })
     if (dropped > 0) logger.warn('db.records.dropped', { collection: 'tasks', count: dropped })
 
-    const timer = timerMeta?.value
+    const timer = timerMeta?.value as Partial<TimerState> | undefined
     const safeTimer: TimerState =
-      timer &&
-      typeof timer === 'object' &&
-      (timer as TimerState).taskId !== undefined &&
-      typeof (timer as TimerState).accumulatedMs === 'number'
-        ? (timer as TimerState)
+      timer && typeof timer === 'object' && typeof timer.accumulatedMs === 'number'
+        ? {
+            taskId: typeof timer.taskId === 'string' ? timer.taskId : null,
+            startedAt: typeof timer.startedAt === 'number' ? timer.startedAt : null,
+            accumulatedMs: timer.accumulatedMs,
+            targetMs: typeof timer.targetMs === 'number' && timer.targetMs > 0 ? timer.targetMs : null,
+          }
         : { ...EMPTY_TIMER }
 
     logger.info('db.load', {

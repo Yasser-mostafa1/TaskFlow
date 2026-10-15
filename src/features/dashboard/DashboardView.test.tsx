@@ -191,7 +191,7 @@ describe('running focus session', () => {
     const task = makeTask({ title: 'Deep work' })
     renderWithApp(<DashboardView onNavigate={onNavigate} />, {
       tasks: [task],
-      timer: { taskId: task.id, startedAt: Date.now() - 5_000, accumulatedMs: 0 },
+      timer: { taskId: task.id, startedAt: Date.now() - 5_000, accumulatedMs: 0, targetMs: 25 * 60_000 },
     })
     const banner = screen.getByRole('region', { name: 'Running focus session' })
 

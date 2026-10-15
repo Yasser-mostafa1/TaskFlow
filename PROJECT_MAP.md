@@ -118,11 +118,11 @@ src/
 | M4 | Subtasks + dependencies (cycle rejection, Blocked state) | G4: exact progress %, circular dependency rejected | **DONE** (incl. keyboard subtask reorder) |
 | M5 | Projects + tags + image attachments (type/size validation, object URL release) | Project delete never deletes tasks; image accept/reject tests | **DONE** |
 | M6 | Calendar (month nav, date select, create/edit on date, overdue marks) | G7: date-shift prevention test under multiple TZs | **DONE** |
-| M7 | Focus view + timer + sessions (timestamp-based, no overlap) | G6: fake-timer math, overlap guard, state survives reload | TODO |
+| M7 | Focus view + timer + sessions (timestamp-based, no overlap) | G6: fake-timer math, overlap guard, state survives reload | **DONE** (221 tests; browser-verified incl. mid-session reload) |
 | M8 | "What Should I Do Now?" deterministic rules | G5: fixture matrix covering priority/due/duration/available-time/status/deps | **IN PROGRESS** — `recommend/rules.test.ts` matrix (priority/due/duration/status/deps) + `RecommendCard` on the dashboard DONE; *pending: available-time (time-of-day) rule* |
 | M9 | Overdue recovery center + confirmed bulk actions | G8: deadlines never change silently | TODO |
 | M10 | Productivity insights (inline SVG) | Real data only; zero denominators → explicit 0/null, no fabricated % | TODO |
-| M11 | Settings, theme persistence, JSON export/import, responsive + a11y + reduced motion, regression run, browser visual verification, honest status report | G9, G10 + `[ORPHANS & PENDING]` refreshed | TODO |
+| M11 | Settings, theme persistence, JSON export/import, responsive + a11y + reduced motion, regression run, browser visual verification, honest status report | G9, G10 + `[ORPHANS & PENDING]` refreshed | **IN PROGRESS** — Settings/theme/export-import/reset DONE + browser-verified 2026-10-15; *pending: dedicated responsive + a11y pass, optional code-splitting* |
 
 **User journeys (verifiable):** G1 quick-add syncs everywhere · G2 filter/sort/complete/bulk · G3 drag persists + syncs · G4 subtasks + blocked deps · G5 recommendations with reasons, no blocked tasks · G6 focus timer survives navigation/reload, single active session · G7 calendar without timezone shift · G8 overdue recovery, no silent deadline changes · G9 validated import, never silent overwrite · G10 theme/sidebar/responsive/a11y.
 
@@ -130,19 +130,25 @@ src/
 
 ## [ORPHANS & PENDING]
 
-**Verified so far:** 153 automated tests green · `tsc --noEmit` clean · production build green (M0–M6 + dashboard rebuild + M8 core).
+**Verified so far:** 221 automated tests green · `tsc --noEmit` clean · production build green (M0–M6 + dashboard rebuild + M8 core + **M7 Focus** + **M11 Settings**).
 
-**In progress:** M8 — pending only the available-time (time-of-day) rule.
+**In progress:** M8 — pending only the available-time (time-of-day) rule. M11 — pending responsive + a11y pass (Settings/Focus/export-import themselves are done and browser-verified).
 
-**Remaining milestones:** M7 → M11 (see table).
+**Remaining milestones:** M8 (finish), M9, M10, M11 (final pass).
 
-**Sections still minimal (must be completed before release):** Focus (M7 stub — the dashboard's "Open focus" shortcut lands there), Insights, Settings. **Dashboard is now complete** (surgical rebuild 2026-10-12).
+**Sections still minimal (must be completed before release):** Insights (M10) only. **Focus (M7) and Settings (M11 core) are complete** (2026-10-15). **Dashboard is complete** (surgical rebuild 2026-10-12).
 
 **Dashboard rebuild (surgical, goal-driven):**
 - Goals (all test-backed): greeting + real day heading · 4 interactive stat cards deep-linking into a pre-filtered My Tasks (new `scope: 'today'` + `NavigateFn(section, filter?)` in `app/Navigation.ts`) · real ProgressRing overview · QuickAdd · deterministic "What should I do now?" with reasons, never blocked/completed · attention (overdue+blocked) and upcoming (7d) lists reusing `TaskRow` · 7-day weekly summary (hand-written `WeekChart` SVG) · live focus-timer banner · onboarding state when the workspace is empty · `logger` events for stat clicks and recommend actions.
 - TDD: 18 tests written first and confirmed RED (4 files), then implementation made them green; no regressions (118 → 153).
 - Browser visual verification (2026-10-12, real UI): empty onboarding → seeded workspace (overdue/today/future/undated) → full dashboard (dark **and** light) → recommendation "Fix login bug · Overdue since Yesterday" → mark-complete → deep-link card → My Tasks pre-filtered on Overdue → cleanup (test data deleted, theme restored, dev server stopped). Zero console errors throughout.
 - `TaskRow` select props became optional (dashboard renders non-selectable rows) — TasksView callers unchanged.
+
+**Focus Mode + Settings implementation (surgical, 2026-10-15):**
+- **Focus (M7):** new pure `features/focus/timer.ts` (`focusTransition`: startTask/startBreak/pause/resume/end/discard with explicit error codes; `makeSession`; `remainingMs`; `isTimerIdle`) + atomic reducer action `timer/finish {session|null}` (record + clear in ONE dispatch → duplicate sessions structurally impossible) + `TimerState.targetMs` (countdown target; null = count-up; **break = `taskId:null` + targetMs**, never recorded as a session). `FocusView`: task picker (active tasks only), presets 25/50 + custom 1–240, timestamp-based countdown (survives inactive tabs via `visibilitychange` resync + `setTimeout` to the target instant; auto-finish at zero), Pause/Resume/End/Discard (discard confirms; break-skip doesn't), subtask checklist, session history + real "Today: Xm focused", empty-workspace onboarding. **Never completes the task.** `Settings` gained `focusDurationMinutes/shortBreakMinutes/longBreakMinutes` (defaults 25/5/15) — break buttons in Focus read them (not decorative).
+- **Settings (M11 core):** `Settings` v2 (`theme: 'light'|'dark'|'system'` via `resolveTheme` + `watchSystemTheme` live OS tracking, `notificationsEnabled`, `defaultSort` feeding TasksView's initial sort), field-by-field `sanitizeSettings` (numbers clamp 1–240, non-numbers → defaults), `SettingsContext` (provider in Root, mirrors AppStoreContext), Notifications switch (requests permission only on the user's toggle; unsupported/denied states shown honestly), JSON **Export** (attachments → data URLs) / **Import** (`parseImportFile` → preview with counts + titles → confirm dialog → `state/replace`, G9) / **Delete all data** (destructive confirm with real counts). New modules: `features/settings/exportImport.ts`, `features/focus/notify.ts`, `app/SettingsContext.tsx`; prefs tests + `render.tsx` gained a settings harness.
+- **CRITICAL regression found & fixed (pre-existing):** `App.tsx`'s hydration effect depended on `[toast]`, and `FeedbackProvider` passed an inline `{ push }` object → **every toast re-ran hydration** (loadState + state/replace), racing the persistence layer and resurrecting stale timer state from IDB (browser-verified: ended sessions kept coming back). Fix: `useMemo` toast API in `Feedback.tsx` + `src/ui/Feedback.test.tsx` regression test (referential stability) + defense-in-depth in `App.tsx` (hydration effect now goes through a `toastRef` with `[]` deps — exactly once per mount, whatever happens downstream). Lesson recorded: never key effects on freshly-allocated context value objects.
+- TDD: 68 new tests (63 written RED-first across timer/prefs/exportImport/FocusView/SettingsView/reducer; 1 feedback-regression; rest view-level). Browser verification (2026-10-15, real Chromium): create task → start 50m → pause/resume math → **full page reload mid-session resumes at correct wall-clock remaining** → End records real session → Settings theme switch applies live (`html.dark` + `colorScheme`) and persists full v2 JSON → focus duration 40 persists instantly → Export downloads real backup → Delete-all confirm shows true counts and empties IDB → Focus onboarding returns. Zero console errors. Test data cleaned, tab closed, dev server stopped.
 
 **Decisions recorded during build:**
 - `blockInfo` ignores dangling dependency ids (the reducer already removes them on delete) so a task can never be stuck "Blocked" forever.
@@ -154,8 +160,7 @@ src/
 - Dashboard empty workspace shows a single onboarding state instead of empty panels (stats/overview stay, all zeros — never fabricated).
 
 **Pending (tracked here, not silent):**
-1. M7 Focus view + timer + sessions (G6) — FocusView is a stub.
-2. M8 available-time rule (time-of-day vs `estimateMinutes`).
-3. M9 overdue recovery center + confirmed bulk reschedule (G8).
-4. M10 Insights view wiring the existing `WeekChart` (G-beyond: real data only).
-5. M11 Settings/theme/export-import (G9, G10), responsive + a11y pass, browser visual verification, optional code-splitting.
+1. M8 available-time rule (time-of-day vs `estimateMinutes`).
+2. M9 overdue recovery center + confirmed bulk reschedule (G8).
+3. M10 Insights view wiring the existing `WeekChart` (G-beyond: real data only).
+4. M11 final pass: responsive + a11y sweep, browser visual verification of remaining views, optional code-splitting (bundle 530 kB / 164 kB gzip, rolldown >500 kB warning).

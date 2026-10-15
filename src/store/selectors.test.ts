@@ -141,7 +141,7 @@ describe('time and activity', () => {
         { id: 's1', taskId: task.id, startedAt: 1000, endedAt: 4000, durationMs: 3000, createdAt: 4000 },
         { id: 's2', taskId: task.id, startedAt: 5000, endedAt: 9000, durationMs: 4000, createdAt: 9000 },
       ],
-      timer: { taskId: task.id, startedAt: 20_000, accumulatedMs: 1000 },
+      timer: { taskId: task.id, startedAt: 20_000, accumulatedMs: 1000, targetMs: null },
     })
     expect(trackedMs(state, task.id, 25_000)).toBe(7000 + 1000 + 5000)
     expect(trackedMs(state, 'other', 25_000)).toBe(0)

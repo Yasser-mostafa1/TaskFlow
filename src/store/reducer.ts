@@ -29,6 +29,8 @@ export type Action =
   | { type: 'session/add'; session: FocusSession }
   | { type: 'session/removeForTask'; taskId: string }
   | { type: 'timer/set'; timer: TimerState }
+  /** Atomic: records the finished session (or none) AND clears the timer in one step. */
+  | { type: 'timer/finish'; session: FocusSession | null }
   | { type: 'attachment/add'; attachment: AppState['attachments'][number] }
   | { type: 'attachment/remove'; id: string }
   | { type: 'attachment/removeForOwner'; ownerType: 'task' | 'project'; ownerId: string }
@@ -114,7 +116,7 @@ export function reducer(state: AppState, action: Action): AppState {
         ),
         timer:
           state.timer.taskId !== null && ids.has(state.timer.taskId)
-            ? { taskId: null, startedAt: null, accumulatedMs: 0 }
+            ? { taskId: null, startedAt: null, accumulatedMs: 0, targetMs: null }
             : state.timer,
       }
     }
@@ -201,6 +203,14 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'timer/set':
       return { ...state, timer: action.timer }
+
+    case 'timer/finish':
+      return {
+        ...state,
+        timer: { taskId: null, startedAt: null, accumulatedMs: 0, targetMs: null },
+        sessions:
+          action.session === null ? state.sessions : [...state.sessions, action.session],
+      }
 
     case 'attachment/add':
       return { ...state, attachments: [...state.attachments, action.attachment] }

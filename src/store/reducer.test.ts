@@ -34,7 +34,7 @@ describe('task actions', () => {
       makeState({
         tasks: [target, other],
         sessions: [{ id: 's1', taskId: target.id, startedAt: 1, endedAt: 2, durationMs: 1000, createdAt: 2 }],
-        timer: { taskId: target.id, startedAt: 5, accumulatedMs: 100 },
+        timer: { taskId: target.id, startedAt: 5, accumulatedMs: 100, targetMs: null },
         attachments: [
           {
             id: 'a1',
@@ -127,5 +127,42 @@ describe('state replacement', () => {
     const next = makeState({ tasks: [makeTask()] })
     const state = run(makeState(), { type: 'state/replace', state: next })
     expect(state).toBe(next)
+  })
+})
+
+describe('timer finishing', () => {
+  const session = { id: 's1', taskId: 't1', startedAt: 1, endedAt: 2, durationMs: 1000, createdAt: 2 }
+
+  it('records the session and clears the timer in ONE atomic step', () => {
+    const running = makeState({
+      timer: { taskId: 't1', startedAt: 5, accumulatedMs: 100, targetMs: 25 * 60_000 },
+    })
+    const state = run(running, { type: 'timer/finish', session })
+    expect(state.sessions).toEqual([session])
+    expect(state.timer).toEqual({ taskId: null, startedAt: null, accumulatedMs: 0, targetMs: null })
+  })
+
+  it('clears without recording when the session is null (discard path)', () => {
+    const running = makeState({
+      sessions: [session],
+      timer: { taskId: 't1', startedAt: 5, accumulatedMs: 100, targetMs: null },
+    })
+    const state = run(running, { type: 'timer/finish', session: null })
+    expect(state.sessions).toEqual([session])
+    expect(state.timer).toEqual({ taskId: null, startedAt: null, accumulatedMs: 0, targetMs: null })
+  })
+
+  it('never touches tasks — finishing focus never completes work', () => {
+    const task = makeTask()
+    const running = makeState({
+      tasks: [task],
+      timer: { taskId: task.id, startedAt: 5, accumulatedMs: 0, targetMs: 60_000 },
+    })
+    const state = run(running, {
+      type: 'timer/finish',
+      session: { ...session, taskId: task.id },
+    })
+    expect(state.tasks[0]?.status).toBe('todo')
+    expect(state.tasks[0]?.completedAt).toBeNull()
   })
 })

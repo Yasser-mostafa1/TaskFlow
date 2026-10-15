@@ -59,7 +59,8 @@ describe('persistence', () => {
   it('persists the timer in the meta store', async () => {
     await setMeta('timer', { taskId: 't1', startedAt: 123, accumulatedMs: 456 })
     const loaded = await loadState()
-    expect(loaded.timer).toEqual({ taskId: 't1', startedAt: 123, accumulatedMs: 456 })
+    // Old shapes (no targetMs) are normalized on load.
+    expect(loaded.timer).toEqual({ taskId: 't1', startedAt: 123, accumulatedMs: 456, targetMs: null })
   })
 
   it('writes state changes after a dispatch and survives a reload', async () => {
@@ -82,7 +83,7 @@ describe('persistence', () => {
   it('writes only the collection that changed', async () => {
     const store = createAppStore(makeState())
     const handle = attachPersistence(store, undefined, 0)
-    store.dispatch({ type: 'timer/set', timer: { taskId: 'x', startedAt: 1, accumulatedMs: 2 } })
+    store.dispatch({ type: 'timer/set', timer: { taskId: 'x', startedAt: 1, accumulatedMs: 2, targetMs: null } })
     await handle.flush()
     const loaded = await loadState()
     expect(loaded.timer.taskId).toBe('x')
@@ -93,7 +94,7 @@ describe('persistence', () => {
   it('keeps the timer after reload', async () => {
     const store = createAppStore(makeState())
     const handle = attachPersistence(store, undefined, 0)
-    store.dispatch({ type: 'timer/set', timer: { taskId: 'x', startedAt: 1, accumulatedMs: 2 } })
+    store.dispatch({ type: 'timer/set', timer: { taskId: 'x', startedAt: 1, accumulatedMs: 2, targetMs: null } })
     await handle.flush()
     const loaded = await loadState()
     expect(loaded.timer.taskId).toBe('x')

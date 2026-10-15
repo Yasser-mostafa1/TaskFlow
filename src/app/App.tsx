@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { logger } from '../core/logger'
-import type { SectionId } from '../core/types'
+import type { SectionId, Settings } from '../core/types'
 import { loadState } from '../db/schema'
 import { createAppStore, EMPTY_STATE } from '../store/appStore'
 import { AppStoreProvider, attachPersistence } from '../store/AppStoreContext'
-import { applyTheme, loadSettings, saveSettings } from './prefs'
+import { applyTheme, loadSettings, resolveTheme, sanitizeSettings, saveSettings, watchSystemTheme } from './prefs'
+import { SettingsProvider } from './SettingsContext'
 import { AppShell } from './AppShell'
 import type { NavigateFn } from './Navigation'
 import { FeedbackProvider, useToast } from '../ui/Feedback'
@@ -40,14 +41,31 @@ function Root() {
   const [section, setSection] = useState<SectionId>(readInitialSection)
   const [pendingFilter, setPendingFilter] = useState<Partial<TaskFilter> | undefined>(undefined)
 
+  const resolvedTheme = resolveTheme(settings.theme)
+
+  /**
+   * The toast API is referentially stable (Feedback memoizes it), but this
+   * effect owns persistence hydration — an accidental re-run would re-race
+   * IndexedDB against live state. Going through a ref makes "exactly once per
+   * mount" explicit regardless of downstream identity changes.
+   */
+  const toastRef = useRef(toast)
+  toastRef.current = toast
+
   useEffect(() => {
-    applyTheme(settings.theme)
+    applyTheme(resolvedTheme)
     saveSettings(settings)
-  }, [settings])
+  }, [settings, resolvedTheme])
+
+  /** 'system' tracks the OS preference live, without touching stored settings. */
+  useEffect(() => {
+    if (settings.theme !== 'system') return undefined
+    return watchSystemTheme(() => applyTheme(resolveTheme('system')))
+  }, [settings.theme])
 
   useEffect(() => {
     let disposed = false
-    const persistence = attachPersistence(appStore, (message) => toast.push('error', message))
+    const persistence = attachPersistence(appStore, (message) => toastRef.current.push('error', message))
 
     loadState()
       .then((loaded) => {
@@ -59,7 +77,7 @@ function Root() {
         logger.errorObj('app.hydrate.failed', err)
         if (disposed) return
         setReady(true)
-        toast.push('error', 'Saved data could not be loaded. Starting with an empty workspace.')
+        toastRef.current.push('error', 'Saved data could not be loaded. Starting with an empty workspace.')
       })
 
     return () => {
@@ -67,7 +85,7 @@ function Root() {
       void persistence.flush()
       persistence.dispose()
     }
-  }, [toast])
+  }, [])
 
   const navigate = useCallback<NavigateFn>((next, filter) => {
     setPendingFilter(filter)
@@ -79,13 +97,21 @@ function Root() {
     }
   }, [])
 
+  const updateSettings = useCallback((patch: Partial<Settings>) => {
+    setSettings((current) => sanitizeSettings({ ...current, ...patch }))
+  }, [])
+
   const toggleTheme = useCallback(() => {
-    setSettings((current) => ({ ...current, theme: current.theme === 'dark' ? 'light' : 'dark' }))
+    setSettings((current) =>
+      sanitizeSettings({ ...current, theme: resolveTheme(current.theme) === 'dark' ? 'light' : 'dark' }),
+    )
   }, [])
 
   const toggleCollapsed = useCallback(() => {
     setSettings((current) => ({ ...current, sidebarCollapsed: !current.sidebarCollapsed }))
   }, [])
+
+  const settingsApi = useMemo(() => ({ settings, update: updateSettings }), [settings, updateSettings])
 
   const content = useMemo(() => {
     if (!ready) {
@@ -119,10 +145,10 @@ function Root() {
       onNavigate={navigate}
       collapsed={settings.sidebarCollapsed}
       onToggleCollapsed={toggleCollapsed}
-      theme={settings.theme}
+      theme={resolvedTheme}
       onToggleTheme={toggleTheme}
     >
-      {content}
+      <SettingsProvider value={settingsApi}>{content}</SettingsProvider>
     </AppShell>
   )
 }

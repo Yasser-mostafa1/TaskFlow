@@ -6,7 +6,7 @@ import { useAppState } from '../../store/AppStoreContext'
 import { Segmented } from '../../ui/Segmented'
 import { Select } from '../../ui/Field'
 
-const SORTS: Array<{ value: SortKey; label: string }> = [
+export const SORTS: Array<{ value: SortKey; label: string }> = [
   { value: 'manual', label: 'Manual order' },
   { value: 'due', label: 'Due date' },
   { value: 'priority', label: 'Priority' },

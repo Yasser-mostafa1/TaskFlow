@@ -80,6 +80,12 @@ export interface TimerState {
   taskId: string | null
   startedAt: number | null
   accumulatedMs: number
+  /**
+   * Countdown target for the current run. `null` = count-up (untimed session).
+   * A break is `taskId: null` with a target; sessions are only ever recorded
+   * for a real task, never for a break.
+   */
+  targetMs: number | null
 }
 
 export interface AppState {
@@ -91,9 +97,20 @@ export interface AppState {
   timer: TimerState
 }
 
+export type ThemePref = 'light' | 'dark' | 'system'
+
+export type SortPref = 'manual' | 'due' | 'priority' | 'created' | 'title' | 'updated'
+
 export interface Settings {
-  theme: 'light' | 'dark'
+  /** 'system' follows the OS colour-scheme hint; applied as light or dark. */
+  theme: ThemePref
   sidebarCollapsed: boolean
+  focusDurationMinutes: number
+  shortBreakMinutes: number
+  longBreakMinutes: number
+  /** Only ever true when the user opted in AND the browser granted permission. */
+  notificationsEnabled: boolean
+  defaultSort: SortPref
 }
 
 export const TASK_STATUSES: readonly TaskStatus[] = ['todo', 'in_progress', 'completed']

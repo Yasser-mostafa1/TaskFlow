@@ -1,5 +1,6 @@
 import { CheckSquare, Kanban, ListTodo, Plus, Square, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSettings } from '../../app/SettingsContext'
 import { DEFAULT_FILTER, selectFiltered, type SortKey, type TaskFilter } from '../../store/selectors'
 import { useDispatch, useAppState } from '../../store/AppStoreContext'
 import { Button } from '../../ui/Button'
@@ -29,10 +30,11 @@ export function TasksView({ initialFilter }: { initialFilter?: Partial<TaskFilte
   const dispatch = useDispatch()
   const toast = useToast()
   const confirm = useConfirm()
+  const { settings } = useSettings()
 
   const [view, setView] = useState<'list' | 'board'>(readInitialView)
   const [filter, setFilter] = useState<TaskFilter>(() => ({ ...DEFAULT_FILTER, ...initialFilter }))
-  const [sort, setSort] = useState<SortKey>('manual')
+  const [sort, setSort] = useState<SortKey>(settings.defaultSort)
   const [selected, setSelected] = useState<string[]>([])
   const [editing, setEditing] = useState<Task | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)

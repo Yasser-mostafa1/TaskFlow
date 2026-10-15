@@ -56,7 +56,7 @@ export function makeState(partial: Partial<AppState> = {}): AppState {
     tags: [],
     sessions: [],
     attachments: [],
-    timer: { taskId: null, startedAt: null, accumulatedMs: 0 },
+    timer: { taskId: null, startedAt: null, accumulatedMs: 0, targetMs: null },
     ...partial,
   }
 }
